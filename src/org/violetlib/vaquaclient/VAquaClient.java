@@ -8,12 +8,10 @@
 
 package org.violetlib.vaquaclient;
 
-import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
 import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
 
@@ -33,7 +31,7 @@ public class VAquaClient
 
     public static @NotNull String getReleaseName()
     {
-        return getStringResource("VAQUACLIENT_RELEASE.txt");
+        return getStringResource("RELEASE.txt");
     }
 
     /**
@@ -42,7 +40,7 @@ public class VAquaClient
 
     public static @NotNull String getBuildID()
     {
-        return getStringResource("VAQUACLIENT_BUILD.txt");
+        return getStringResource("BUILD.txt");
     }
 
     /**
@@ -76,26 +74,6 @@ public class VAquaClient
             return className.startsWith("com.apple.laf.") || className.startsWith("org.violetlib.aqua.");
         }
         return false;
-    }
-
-    /**
-      Indicate whether the current effective appearance is a dark appearance.
-      @return true if dark, false if light, or null if not known.
-    */
-
-    public static @Nullable Boolean isAppearanceDark()
-    {
-        return AppearanceSupport.isEffectiveAppearanceDark();
-    }
-
-    /**
-      Return the value of a named system color for the current effective appearance.
-      @return the color, or null if not known.
-    */
-
-    public static @Nullable Color getSystemColor(@NotNull String name)
-    {
-        return AppearanceSupport.getEffectiveAppearanceSystemColor(name);
     }
 
     private static @NotNull String getStringResource(@NotNull String name)

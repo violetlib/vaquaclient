@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2020 Alan Snyder.
+ * All rights reserved.
+ *
+ * You may not use, copy or modify this file, except in compliance with the license agreement. For details see
+ * accompanying license terms.
+ */
+
 package org.violetlib.vaquaclient;
 
 import java.awt.Color;
@@ -18,11 +26,26 @@ public class AppearanceSupport
     private static boolean hasFailed;
     private static boolean hasWarned;
 
+    private AppearanceSupport()
+    {
+    }
+
+    /**
+      Indicate whether the current appearance is a dark appearance.
+      @return true if the appearance is dark, false if the appearance is light, or null if the information is not
+        available.
+    */
+
     public static @Nullable Boolean isEffectiveAppearanceDark()
     {
         Object a = getEffectiveAppearance();
         return a != null ? isDark(a) : null;
     }
+
+    /**
+      Return a named system color appropriate for the current appearance.
+      @return the color, or null if not available.
+    */
 
     public static @Nullable Color getEffectiveAppearanceSystemColor(@NotNull String name)
     {

@@ -5,15 +5,24 @@
     default="release"
     xmlns:resolver="antlib:org.apache.maven.resolver.ant"
     xmlns:ivy="antlib:org.apache.ivy.ant"
+    xmlns:if="ant:if"
     name="VAquaClient">
 
     <tstamp>
         <format property="NOW" timezone="GMT" pattern="yyyy-MM-dd'T'HH:mm:ss'Z'"/>
     </tstamp>
 
+    <property environment="env"/>
+    <echo message="${env.PATH}"/>
+    <exec executable="java_home">
+        <arg value="-F"/>
+        <arg value="-v"/>
+        <arg value="9+"/>
+    </exec>
+
     <!-- A Java 9 or later compiler is required -->
 
-    <exec executable="/usr/libexec/java_home" outputproperty="jdk">
+    <exec executable="java_home" outputproperty="jdk">
         <arg value="-F"/>
         <arg value="-v"/>
         <arg value="9+"/>
@@ -23,7 +32,7 @@
 
     <!-- A Java 8 boot class path is required -->
 
-    <exec executable="/usr/libexec/java_home" outputproperty="jdk8">
+    <exec executable="java_home" outputproperty="jdk8">
         <arg value="-F"/>
         <arg value="-v"/>
         <arg value="1.8"/>
@@ -56,12 +65,18 @@
       <echo file="${classesdir}/org/violetlib/vaquaclient/BUILD.txt" message="${NOW}"/>
     </target>
 
-    <target name="copyResources">
-      <copy todir="${classesdir}">
-        <fileset dir="${resources}">
-          <include name="org/violetlib/**"/>
-        </fileset>
-      </copy>
+    <condition property="resourcesPresent">
+        <resourceexists>
+            <file file="${resources}"/>
+        </resourceexists>
+    </condition>
+
+    <target name="copyResources" if="${resourcesPresent}">
+        <copy todir="${classesdir}">
+            <fileset dir="${resources}">
+                <include name="org/violetlib/**"/>
+            </fileset>
+        </copy>
     </target>
 
     <!--
