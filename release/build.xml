@@ -1,62 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project
+<project name="VAquaClient"
     basedir="."
     default="release"
+    xmlns:if="ant:if"
+    xmlns:unless="ant:unless"
     xmlns:resolver="antlib:org.apache.maven.resolver.ant"
     xmlns:ivy="antlib:org.apache.ivy.ant"
-    xmlns:if="ant:if"
-    name="VAquaClient">
+    >
 
     <tstamp>
         <format property="NOW" timezone="GMT" pattern="yyyy-MM-dd'T'HH:mm:ss'Z'"/>
     </tstamp>
 
-    <property environment="env"/>
-    <echo message="${env.PATH}"/>
-    <exec executable="java_home">
-        <arg value="-F"/>
-        <arg value="-v"/>
-        <arg value="9+"/>
-    </exec>
-
-    <!-- A Java 9 or later compiler is required -->
-
-    <exec executable="java_home" outputproperty="jdk">
-        <arg value="-F"/>
-        <arg value="-v"/>
-        <arg value="9+"/>
-    </exec>
-
-    <property name="javac" location="${jdk}/bin/javac"/>
-
-    <!-- A Java 8 boot class path is required -->
-
-    <exec executable="java_home" outputproperty="jdk8">
-        <arg value="-F"/>
-        <arg value="-v"/>
-        <arg value="1.8"/>
-    </exec>
-
-    <property name="bootclasspath" location="${jdk8}/jre/lib/rt.jar" />
-
-    <property name="RELEASE" value="0.9"/>
-    <property name="fullReleaseName" value="${RELEASE} ${NOW}"/>
-
     <property name="base" location=".."/>
     <property name="src" location="${base}/src"/>
-    <property name="resources" location="${base}/resources"/>
+    <property name="resourcesdir" location="${base}/resources"/>
     <property name="builddir" location="out"/>
     <property name="classesdir" location="${builddir}/classes"/>
     <property name="distdir" location="dist"/>
 
     <property name="debug" value="false"/>
 
+    <!-- A Java 9 or later compiler is required -->
+
+    <property environment="env"/>
+    <property if:set="env.JAVA_HOME" name="jdk" value="${env.JAVA_HOME}"/>
+    <property name="jdk" location="${java.home}"/>
+    <echo message="Using JDK: ${jdk}"/>
+
+    <property name="javac" location="${jdk}/bin/javac"/>
+
+    <property name="RELEASE" value="0.9"/>
+    <property name="fullReleaseName" value="${RELEASE} ${NOW}"/>
+
     <target name="init">
         <echo level="info" message="${fullReleaseName}"/>
     </target>
 
-    <target name="clean" description="Remove build directories">
+    <target name="clean">
         <delete includeEmptyDirs="true" failonerror="false"><fileset dir="${builddir}"/></delete>
     </target>
 
@@ -67,17 +49,19 @@
 
     <condition property="resourcesPresent">
         <resourceexists>
-            <file file="${resources}"/>
+            <file file="${resourcesdir}"/>
         </resourceexists>
     </condition>
 
     <target name="copyResources" if="${resourcesPresent}">
         <copy todir="${classesdir}">
-            <fileset dir="${resources}">
+            <fileset dir="${resourcesdir}">
                 <include name="org/violetlib/**"/>
             </fileset>
         </copy>
     </target>
+
+    <property name="annotationsVersion" value="20.1.0"/>
 
     <!--
       To use the Maven resolver, the Maven resolver ant tasks uber JAR must be installed in .ant/lib.
@@ -86,10 +70,10 @@
 
     <target name="resolve-maven">
         <resolver:resolve>
-          <dependencies>
-            <dependency coords="org.jetbrains:annotations:20.1.0"/>
-          </dependencies>
-          <path refid="cp" classpath="compile"/>
+            <dependencies>
+                <dependency coords="org.jetbrains:annotations:${annotationsVersion}"/>
+            </dependencies>
+            <path refid="cp" classpath="compile"/>
         </resolver:resolve>
     </target>
 
@@ -100,19 +84,19 @@
 
     <target name="resolve-ivy">
         <ivy:cachepath pathid="cp">
-            <dependency org="org.jetbrains" name="annotations" rev="20.1.0"/>
+            <dependency org="org.jetbrains" name="annotations" rev="${annotationsVersion}"/>
         </ivy:cachepath>
     </target>
 
     <target name="resolve" depends="resolve-maven"/>
 
-    <target name="compile8" depends="copyResources, resolve">
+    <target name="compile-java" depends="copyResources, resolve">
       <mkdir dir="${classesdir}"/>
 
-      <javac source="1.8" target="1.8"
-          bootclasspath="${bootclasspath}"
+      <javac
           classpathref="cp"
           encoding="UTF-8"
+          release="8"
           srcdir="${src}"
           destdir="${classesdir}"
           debug="${debug}"
@@ -127,16 +111,13 @@
       </javac>
     </target>
 
-    <target name="compile-Java" depends="compile8">
-    </target>
-
-    <target name="VAquaClient" depends="compile-Java,saveIDs">
+    <target name="VAquaClient" depends="compile-java,saveIDs">
 
         <echo level="info" message="Building VAquaClient ${fullReleaseName}"/>
 
         <mkdir dir="${distdir}"/>
 
-        <jar jarfile="${distdir}/VAquaClient.jar" basedir="${classesdir}">
+        <jar jarfile="${distdir}/VAquaClient.jar" basedir="${classesdir}" manifest="${resourcesdir}/Manifest">
         </jar>
     </target>
 
