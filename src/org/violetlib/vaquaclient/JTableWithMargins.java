@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Alan Snyder.
+ * Copyright (c) 2020-2023 Alan Snyder.
  * All rights reserved.
  *
  * You may not use, copy or modify this file, except in compliance with the license agreement. For details see
@@ -60,11 +60,13 @@ public class JTableWithMargins
   extends JTable
 {
     public static final String INSET_VIEW_MARGIN_KEY = "Aqua.insetViewMargin";
+    public static final String INSET_VIEW_VERTICAL_MARGIN_KEY = "Aqua.insetViewVerticalMargin";
 
     private final TableLayoutManager layoutManager = new TableLayoutManager(this);
     private final MyPropertyChangeListener propertyChangeListener = new MyPropertyChangeListener();
 
     private int margin;
+    private int verticalMargin;
 
     public JTableWithMargins()
     {
@@ -116,14 +118,16 @@ public class JTableWithMargins
     private void updateMargins()
     {
         int margin = getSpecifiedMargin();
-        if (margin != this.margin) {
-            installMargin(margin);
+        int verticalMargin = getSpecifiedVerticalMargin();
+        if (margin != this.margin || verticalMargin != this.verticalMargin) {
+            installMargin(margin, verticalMargin);
         }
     }
 
-    private void installMargin(int m)
+    private void installMargin(int m, int vm)
     {
         margin = m;
+        verticalMargin = vm;
         revalidate();
         repaint();
         JTableHeader header = getTableHeader();
@@ -131,10 +135,10 @@ public class JTableWithMargins
             header.revalidate();
             header.repaint();
         }
-        marginChanged(margin);
+        marginChanged(margin, verticalMargin);
     }
 
-    protected void marginChanged(int margin)
+    protected void marginChanged(int margin, int verticalMargin)
     {
     }
 
@@ -145,7 +149,7 @@ public class JTableWithMargins
         if (isMinimumSizeSet()) {
             return d;
         }
-        return fixWidth(d);
+        return fixSize(d);
     }
 
     @Override
@@ -155,7 +159,7 @@ public class JTableWithMargins
         if (isPreferredSizeSet()) {
             return d;
         }
-        return fixWidth(d);
+        return fixSize(d);
     }
 
     @Override
@@ -165,25 +169,32 @@ public class JTableWithMargins
         if (isMaximumSizeSet()) {
             return d;
         }
-        return fixWidth(d);
+        return fixSize(d);
     }
 
-    private @NotNull Dimension fixWidth(@NotNull Dimension d)
+    private @NotNull Dimension fixSize(@NotNull Dimension d)
     {
         int specifiedMargin = getSpecifiedMargin();
-        if (specifiedMargin == 0) {
+        int specifiedVerticalMargin = getSpecifiedVerticalMargin();
+        if (specifiedMargin == 0 && specifiedVerticalMargin == 0) {
             return d;
         }
         // VAqua will return the correct width but only when it installs the margins.
         if (isVAquaInsetView()) {
             return d;
         }
-        return new Dimension(d.width + 2 * specifiedMargin, d.height);
+        return new Dimension(d.width + 2 * specifiedMargin, d.height + 2 * specifiedVerticalMargin);
     }
 
     private int getSpecifiedMargin()
     {
         Object o = getClientProperty(INSET_VIEW_MARGIN_KEY);
+        return Math.max(0, o instanceof Integer ? (Integer) o : 0);
+    }
+
+    private int getSpecifiedVerticalMargin()
+    {
+        Object o = getClientProperty(INSET_VIEW_VERTICAL_MARGIN_KEY);
         return Math.max(0, o instanceof Integer ? (Integer) o : 0);
     }
 
@@ -222,8 +233,9 @@ public class JTableWithMargins
     public @NotNull Rectangle getCellRect(int row, int column, boolean includeSpacing)
     {
         Rectangle r = super.getCellRect(row, column, includeSpacing);
-        if (margin > 0 && columnModel.getColumnCount() > 0) {
+        if ((margin > 0 || verticalMargin > 0) && columnModel.getColumnCount() > 0) {
             r.x += margin;
+            r.y += verticalMargin;
         }
         return r;
     }
@@ -241,7 +253,7 @@ public class JTableWithMargins
         public void propertyChange(PropertyChangeEvent evt)
         {
             String name = evt.getPropertyName();
-            if (name == null || name.equals(INSET_VIEW_MARGIN_KEY)) {
+            if (name == null || name.equals(INSET_VIEW_MARGIN_KEY) || name.equals(INSET_VIEW_VERTICAL_MARGIN_KEY)) {
                 updateMargins();
             }
         }
@@ -253,7 +265,7 @@ public class JTableWithMargins
 
     private static class TableLayoutManager
     {
-        private JTableWithMargins table;
+        private final JTableWithMargins table;
 
         public TableLayoutManager(JTableWithMargins table)
         {
