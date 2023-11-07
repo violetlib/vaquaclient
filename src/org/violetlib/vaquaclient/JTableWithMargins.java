@@ -223,10 +223,19 @@ public class JTableWithMargins
     @Override
     public int columnAtPoint(@NotNull Point point)
     {
-        if (margin > 0) {
-            point = new Point(point.x - margin, point.y);
+        if (margin > 0 || verticalMargin > 0) {
+            point = new Point(point.x - margin, point.y - verticalMargin);
         }
         return super.columnAtPoint(point);
+    }
+
+    @Override
+    public int rowAtPoint(@NotNull Point point)
+    {
+        if (margin > 0 || verticalMargin > 0) {
+            point = new Point(point.x - margin, point.y - verticalMargin);
+        }
+        return super.rowAtPoint(point);
     }
 
     @Override
