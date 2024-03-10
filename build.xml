@@ -1,28 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="VAquaClient" default="install" basedir=".">
+<project name="VAquaClient" default="install">
 
-  <property name="debug" value="true"/>
+  <typedef resource="org/violetlib/vbuilder/ant/antlib.xml"/>
+
   <property name="bootclasspath" location="${user.home}/javalib/boot/rt8.jar" />
   <property name="jarfile" value="release/dist/VAquaClient.jar"/>
+  <property name="local.install.dir" value="${user.home}/javalib"/>
+
+  <property name="RELEASE" value="4"/>
+
+  <property name="debug" value="true"/>
 
   <target name="build">
     <ant dir="release"/>
   </target>
 
   <target name="install" depends="build">
-    <copy todir="${user.home}/javalib/" file="${jarfile}"/>
-    <copy todir="${user.home}/build/products/jars/" file="${jarfile}"/>
-    <exec dir="${basedir}" executable="mvn" os="Mac OS X">
-        <arg value="org.apache.maven.plugins:maven-install-plugin:3.0.0-M1:install-file"/>
-        <arg value="-Dfile=${jarfile}"/>
-        <arg value="-DgroupId=org.violetlib"/>
-        <arg value="-DartifactId=vaquaclient"/>
-        <arg value="-Dversion=2.0"/>
-        <arg value="-Dpackaging=jar"/>
-    </exec>
+    <copy file="${jarfile}" preservelastmodified="true" toDir="${local.install.dir}"/>
+    <installLocal jar="${jarfile}" coordinates="org.violetlib:vaquaclient:${RELEASE}"/>
   </target>
-
-  <target name="VAquaClient" depends="install"/>
 
 </project>
