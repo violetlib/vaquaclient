@@ -10,7 +10,7 @@
 
   <property name="RELEASE" value="4"/>
 
-  <property name="debug" value="true"/>
+  <property name="compile.debug" value="true"/>
 
   <target name="build">
     <ant dir="release"/>
