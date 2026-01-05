@@ -7,8 +7,9 @@
   <property name="bootclasspath" location="${user.home}/javalib/boot/rt8.jar" />
   <property name="jarfile" value="release/dist/VAquaClient.jar"/>
   <property name="local.install.dir" value="${user.home}/javalib"/>
+  <property name="install.local.repo" value="true"/>
 
-  <property name="RELEASE" value="4"/>
+  <property name="RELEASE" value="3"/>
 
   <property name="compile.debug" value="true"/>
 
@@ -18,7 +19,6 @@
 
   <target name="install" depends="build">
     <copy file="${jarfile}" preservelastmodified="true" toDir="${local.install.dir}"/>
-    <installLocal jar="${jarfile}" coordinates="org.violetlib:vaquaclient:${RELEASE}"/>
   </target>
 
 </project>

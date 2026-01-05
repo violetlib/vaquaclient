@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2020 Alan Snyder.
+ * Copyright (c) 2015-2025 Alan Snyder.
  * All rights reserved.
  *
  * You may not use, copy or modify this file, except in compliance with the license agreement. For details see
@@ -8,14 +8,15 @@
 
 package org.violetlib.vaquaclient;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import javax.swing.LookAndFeel;
-import javax.swing.UIManager;
-
-import org.jetbrains.annotations.*;
+import java.lang.reflect.Method;
 
 /**
 
@@ -63,7 +64,7 @@ public class VAquaClient
     }
 
     /**
-      Indicate whether the installed look and feel is VAqua or the standard Aqua look and feel.
+      Indicate whether the VAqua or the standard Aqua look and feel is the installed look and feel.
     */
 
     public static boolean isAquaInstalled()
@@ -74,6 +75,67 @@ public class VAquaClient
             return className.startsWith("com.apple.laf.") || className.startsWith("org.violetlib.aqua.");
         }
         return false;
+    }
+
+    /**
+      Return an identification of installed release of VAqua. This method returns null if VAqua is not the installed
+      look and feel.
+    */
+
+    public static @Nullable String getVAquaReleaseName()
+    {
+        try {
+            LookAndFeel laf = UIManager.getLookAndFeel();
+            Method m = laf.getClass().getMethod("getReleaseName");
+            Object o = m.invoke(null);
+            if (o instanceof String) {
+                return (String) o;
+            }
+        } catch (Exception ignore) {
+        }
+        return null;
+    }
+
+    /**
+      Return an identification of installed build of VAqua. This method returns null if VAqua is not the installed
+      look and feel.
+    */
+
+    public static @Nullable String getVAquaBuildID()
+    {
+        try {
+            LookAndFeel laf = UIManager.getLookAndFeel();
+            Method m = laf.getClass().getMethod("getBuildID");
+            Object o = m.invoke(null);
+            if (o instanceof String) {
+                return (String) o;
+            }
+        } catch (Exception ignore) {
+        }
+        return null;
+    }
+
+    /**
+      Identify the UI version. The UI version normally matches the OS release, except where macOS is supporting
+      backward compatibility.
+
+      @return an integer version, or zero if VAqua is not the installed look and feel or the UI version is not
+      available. A UI version is an integer with the decimal form MMmm, where MM is the major release number and mm is
+      the minor release number. For example, 2600 represents the first release of macOS 26 (Tahoe).
+    */
+
+    public static int getUIVersion()
+    {
+        try {
+            LookAndFeel laf = UIManager.getLookAndFeel();
+            Method m = laf.getClass().getMethod("getUIVersion");
+            Object o = m.invoke(null);
+            if (o instanceof Integer) {
+                return (Integer) o;
+            }
+        } catch (Exception ignore) {
+        }
+        return 0;
     }
 
     private static @NotNull String getStringResource(@NotNull String name)
@@ -91,7 +153,7 @@ public class VAquaClient
                     sb.append((char) ch);
                 }
                 return sb.toString();
-            } catch (IOException ex) {
+            } catch (IOException ignore) {
             }
         }
 

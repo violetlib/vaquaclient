@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Alan Snyder.
+ * Copyright (c) 2020-2025 Alan Snyder.
  * All rights reserved.
  *
  * You may not use, copy or modify this file, except in compliance with the license agreement. For details see
@@ -8,16 +8,17 @@
 
 package org.violetlib.vaquaclient;
 
-import java.awt.Color;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import javax.swing.event.ChangeListener;
+import java.awt.*;
 import java.lang.reflect.Method;
 import java.util.Map;
-import javax.swing.LookAndFeel;
-import javax.swing.UIManager;
-
-import org.jetbrains.annotations.*;
 
 /**
-  Indirect support for appearance objects. Uses VAqua (if installed)
+  Indirect support for VAppearances. Uses VAqua and its associated VAppearances (if installed).
 */
 
 public class AppearanceSupport
@@ -33,13 +34,37 @@ public class AppearanceSupport
     /**
       Indicate whether the current appearance is a dark appearance.
       @return true if the appearance is dark, false if the appearance is light, or null if the information is not
-        available.
+      available.
     */
 
     public static @Nullable Boolean isEffectiveAppearanceDark()
     {
         Object a = getEffectiveAppearance();
         return a != null ? isDark(a) : null;
+    }
+
+    /**
+      Indicate whether the current appearance is a high contrast appearance.
+      @return true if the appearance is high contrast, false if the appearance is not high contrast, or null if the
+      information is not available.
+    */
+
+    public static @Nullable Boolean isEffectiveAppearanceHighContrast()
+    {
+        Object a = getAppearanceSettings();
+        return a != null ? isHighContrast(a) : null;
+    }
+
+    /**
+      Indicate whether the current appearance is a tinted appearance.
+      @return true if the appearance is tinted, false if the appearance is not tinted, or null if the information is not
+      available.
+    */
+
+    public static @Nullable Boolean isEffectiveAppearanceTinted()
+    {
+        Object a = getAppearanceSettings();
+        return a != null ? isTinted(a) : null;
     }
 
     /**
@@ -51,6 +76,110 @@ public class AppearanceSupport
     {
         Object a = getEffectiveAppearance();
         return a != null ? getSystemColor(a, name) : null;
+    }
+
+    /**
+      Return a non-modifiable map that provides the current values of the system colors associated with the current
+      appearance.
+    */
+
+    public static @Nullable Map<String,Color> getEffectiveAppearanceSystemColors()
+    {
+        Object a = getEffectiveAppearance();
+        return a != null ? getColors(a) : null;
+    }
+
+    /**
+      Register a responder to be called when the effective appearance or a related appearance setting may have changed.
+      @param r The responder.
+      @return true if successful, false otherwise.
+    */
+
+    public static boolean addEffectiveAppearanceChangeResponder(@NotNull Runnable r)
+    {
+        ChangeListener listener = e -> r.run();
+        Class<?> c = getVAppearances();
+        if (c == null) {
+            return false;
+        }
+        try {
+            Method m = c.getMethod("addEffectiveAppearanceChangeListener", ChangeListener.class);
+            m.invoke(null, listener);
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    /**
+      Indicate whether the specified component currently has a dark appearance.
+      @return true if the appearance is dark, false if the appearance is light, or null if the information is not
+      available.
+    */
+
+    public static @Nullable Boolean isDark(@NotNull Component c)
+    {
+        LookAndFeel laf = UIManager.getLookAndFeel();
+        if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
+            return isDark(findAppearanceName(c));
+        }
+        return null;
+    }
+
+    /**
+      Return a non-modifiable map that provides the current values of the system colors associated with the specified
+      component.
+    */
+
+    public static @Nullable Map<String,Color> getColors(@NotNull Component c)
+    {
+        LookAndFeel laf = UIManager.getLookAndFeel();
+         if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
+             return getColors(findAppearanceName(c));
+         }
+         return null;
+    }
+
+    private static @Nullable String findAppearanceName(@NotNull Component c)
+    {
+        while (c != null) {
+            if (c instanceof JComponent) {
+                JComponent jc = (JComponent) c;
+                Object o = jc.getClientProperty("Aqua.appearanceName");
+                if ("NSAppearanceNameAqua".equals(o)) {
+                     return (String) o;
+                 }
+                 if ("NSAppearanceNameDarkAqua".equals(o)) {
+                     return (String) o;
+                 }
+            }
+            c = c.getParent();
+        }
+        return null;
+    }
+
+    private static @Nullable Boolean isDark(@Nullable String s)
+    {
+        if ("NSAppearanceNameAqua".equals(s)) {
+            return false;
+        }
+        if ("NSAppearanceNameDarkAqua".equals(s)) {
+            return true;
+        }
+        return null;
+    }
+
+    private static @Nullable Map<String,Color> getColors(@Nullable String s)
+    {
+        if (s == null) {
+            return null;
+        }
+
+        Object appearance = getAppearance(s);
+        if (appearance == null) {
+            return null;
+        }
+        return getColors(appearance);
     }
 
     private static @Nullable Boolean isDark(@NotNull Object appearance)
@@ -66,18 +195,39 @@ public class AppearanceSupport
     private static @Nullable Color getSystemColor(@NotNull Object appearance, @NotNull String name)
     {
         try {
-            Map<?,?> colors = getColors(appearance);
-            return colors != null ? (Color) colors.get(name) : null;
+            Map<String,Color> colors = getColors(appearance);
+            return colors != null ? colors.get(name) : null;
         } catch (Exception ex) {
             return null;
         }
     }
 
-    private static @Nullable Map<?,?> getColors(@NotNull Object appearance)
+    private static @Nullable Map<String,Color> getColors(@NotNull Object appearance)
     {
         try {
             Method m = findInterfaceMethod(appearance.getClass().getMethod("getColors"));
             return (Map) m.invoke(appearance);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private static @Nullable Boolean isHighContrast(@NotNull Object settings)
+    {
+        try {
+            Method m = settings.getClass().getMethod("isIncreaseContrast");
+            return (Boolean) m.invoke(settings);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private static @Nullable Boolean isTinted(@NotNull Object settings)
+    {
+        try {
+            Method m = settings.getClass().getMethod("getTintedOption");
+            Integer n = (Integer) m.invoke(settings);
+            return n != 0;
         } catch (Exception ex) {
             return null;
         }
@@ -97,6 +247,22 @@ public class AppearanceSupport
         throw new NoSuchMethodException();
     }
 
+    private static @Nullable Object getAppearance(@NotNull String name)
+    {
+        Class<?> c = getVAppearances();
+        return c != null ? getAppearance(c, name) : null;
+    }
+
+    private static @Nullable Object getAppearance(@NotNull Class<?> c, @NotNull String name)
+    {
+        try {
+            Method m = c.getMethod("getAppearance", String.class);
+            return m.invoke(null, name);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
     private static @Nullable Object getEffectiveAppearance()
     {
         Class<?> c = getVAppearances();
@@ -107,6 +273,22 @@ public class AppearanceSupport
     {
         try {
             Method m = c.getMethod("getApplicationEffectiveAppearance");
+            return m.invoke(null);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private static @Nullable Object getAppearanceSettings()
+    {
+        Class<?> c = getVAppearances();
+        return c != null ? getAppearanceSettings(c) : null;
+    }
+
+    private static @Nullable Object getAppearanceSettings(@NotNull Class<?> c)
+    {
+        try {
+            Method m = c.getMethod("getAppearanceSettings");
             return m.invoke(null);
         } catch (Exception ex) {
             return null;
