@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 Alan Snyder.
+ * Copyright (c) 2020-2026 Alan Snyder.
  * All rights reserved.
  *
  * You may not use, copy or modify this file, except in compliance with the license agreement. For details see
@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class AppearanceSupport
     }
 
     /**
-      Indicate whether the current appearance is a dark appearance.
+      Indicate whether the current application effective appearance is a dark appearance.
       @return true if the appearance is dark, false if the appearance is light, or null if the information is not
       available.
     */
@@ -44,7 +45,7 @@ public class AppearanceSupport
     }
 
     /**
-      Indicate whether the current appearance is a high contrast appearance.
+      Indicate whether the current application effective appearance is a high contrast appearance.
       @return true if the appearance is high contrast, false if the appearance is not high contrast, or null if the
       information is not available.
     */
@@ -56,7 +57,7 @@ public class AppearanceSupport
     }
 
     /**
-      Indicate whether the current appearance is a tinted appearance.
+      Indicate whether the current application effective appearance is a tinted appearance.
       @return true if the appearance is tinted, false if the appearance is not tinted, or null if the information is not
       available.
     */
@@ -68,7 +69,7 @@ public class AppearanceSupport
     }
 
     /**
-      Return a named system color appropriate for the current appearance.
+      Return a named system color appropriate for the current application effective appearance.
       @return the color, or null if not available.
     */
 
@@ -80,7 +81,7 @@ public class AppearanceSupport
 
     /**
       Return a non-modifiable map that provides the current values of the system colors associated with the current
-      appearance.
+      application effective appearance.
     */
 
     public static @Nullable Map<String,Color> getEffectiveAppearanceSystemColors()
@@ -90,7 +91,8 @@ public class AppearanceSupport
     }
 
     /**
-      Register a responder to be called when the effective appearance or a related appearance setting may have changed.
+      Register a responder to be called when the application effective appearance or a related appearance setting may
+      have changed.
       @param r The responder.
       @return true if successful, false otherwise.
     */
@@ -134,28 +136,74 @@ public class AppearanceSupport
     public static @Nullable Map<String,Color> getColors(@NotNull Component c)
     {
         LookAndFeel laf = UIManager.getLookAndFeel();
-         if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
-             return getColors(findAppearanceName(c));
-         }
-         return null;
+        if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
+            return getColors(findAppearanceName(c));
+        }
+        return null;
+    }
+
+    /**
+      Set or clear the application appearance.
+
+      @param appearanceName If not null and valid, this appearance is installed as the application appearance. If null,
+      the application appearance is cleared, which means that the application effective appearance will be the system
+      appearance.
+      @throws UnsupportedOperationException if this operation could not be performed.
+    */
+
+    public static void setApplicationAppearance(@Nullable String appearanceName)
+      throws UnsupportedOperationException
+    {
+        Class<?> c = getVAppearances();
+        if (c == null) {
+            throw new UnsupportedOperationException("VAppearances is not available");
+        }
+        setApplicationAppearance(c, appearanceName);
+
+    }
+
+    private static void setApplicationAppearance(@NotNull Class<?> c, @Nullable String appearanceName)
+      throws UnsupportedOperationException
+    {
+        try {
+            Method m = c.getMethod("setApplicationAppearance", String.class);
+            m.invoke(null, appearanceName);
+        } catch (InvocationTargetException ex) {
+            // The appearance is not defined
+            throw new UnsupportedOperationException(ex.getMessage());
+        } catch (Exception ex) {
+            throw new UnsupportedOperationException("Unable to set the application appearance");
+        }
     }
 
     private static @Nullable String findAppearanceName(@NotNull Component c)
     {
+        try {
+            LookAndFeel laf = UIManager.getLookAndFeel();
+            Method m = laf.getClass().getMethod("getComponentAppearance", Component.class);
+            Object o = m.invoke(null, c);
+            if (o instanceof String) {
+                return (String) o;
+            }
+        } catch (Exception ignore) {
+        }
+
         while (c != null) {
             if (c instanceof JComponent) {
                 JComponent jc = (JComponent) c;
                 Object o = jc.getClientProperty("Aqua.appearanceName");
                 if ("NSAppearanceNameAqua".equals(o)) {
-                     return (String) o;
-                 }
-                 if ("NSAppearanceNameDarkAqua".equals(o)) {
-                     return (String) o;
-                 }
+                    return (String) o;
+                }
+                if ("NSAppearanceNameDarkAqua".equals(o)) {
+                    return (String) o;
+                }
             }
             c = c.getParent();
         }
-        return null;
+
+        Object o = getEffectiveAppearance();
+        return o != null ? getAppearanceName(o) : null;
     }
 
     private static @Nullable Boolean isDark(@Nullable String s)
@@ -180,6 +228,16 @@ public class AppearanceSupport
             return null;
         }
         return getColors(appearance);
+    }
+
+    private static @Nullable String getAppearanceName(@NotNull Object appearance)
+    {
+        try {
+            Method m = findInterfaceMethod(appearance.getClass().getMethod("getName"));
+            return (String) m.invoke(appearance);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private static @Nullable Boolean isDark(@NotNull Object appearance)
