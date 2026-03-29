@@ -365,7 +365,6 @@ public class AppearanceSupport
                 ClassLoader classLoader = laf.getClass().getClassLoader();
                 try {
                     vAppearancesClass = Class.forName("org.violetlib.vappearances.VAppearances", true, classLoader);
-                    System.err.println("Loaded VAppearances using VAqua class loader");
                     return vAppearancesClass;
                 } catch (Exception ex) {
                     System.err.println("Did not find VAppearances using VAqua class loader");
@@ -377,7 +376,6 @@ public class AppearanceSupport
             // possible.
             try {
                 vAppearancesClass = Class.forName("org.violetlib.vappearances.VAppearances");
-                System.err.println("Loaded VAppearances because look and feel is " + laf.getName());
                 return vAppearancesClass;
             } catch (Exception ex) {
                 System.err.println("Did not find VAppearances using application class loader");
