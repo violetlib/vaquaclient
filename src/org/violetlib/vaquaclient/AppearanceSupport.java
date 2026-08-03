@@ -34,6 +34,10 @@ public class AppearanceSupport
 
     /**
       Indicate whether the current application effective appearance is a dark appearance.
+      <p>
+      Note: If called before VAqua has been
+      installed as the look and feel, this method may return false even if the system appearance is dark.
+
       @return true if the appearance is dark, false if the appearance is light, or null if the information is not
       available.
     */
