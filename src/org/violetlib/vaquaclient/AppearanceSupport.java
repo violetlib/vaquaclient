@@ -126,7 +126,7 @@ public class AppearanceSupport
     public static @Nullable Boolean isDark(@NotNull Component c)
     {
         LookAndFeel laf = UIManager.getLookAndFeel();
-        if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
+        if (laf != null && laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
             return isDark(findAppearanceName(c));
         }
         return null;
@@ -140,10 +140,26 @@ public class AppearanceSupport
     public static @Nullable Map<String,Color> getColors(@NotNull Component c)
     {
         LookAndFeel laf = UIManager.getLookAndFeel();
-        if (laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
+        if (laf != null && laf.getClass().getName().equals("org.violetlib.aqua.AquaLookAndFeel")) {
             return getColors(findAppearanceName(c));
         }
         return null;
+    }
+
+    public static void installColorsInstrumentation(@NotNull Object o)
+      throws UnsupportedOperationException
+    {
+        try {
+            LookAndFeel laf = UIManager.getLookAndFeel();
+            if (laf != null) {
+                Method m = laf.getClass().getMethod("installColorsInstrumentation", Object.class);
+                m.invoke(null, o);
+            }
+        } catch (UnsupportedOperationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new UnsupportedOperationException(e.getMessage(), e);
+        }
     }
 
     /**
