@@ -153,7 +153,7 @@ public class AppearanceSupport
             LookAndFeel laf = UIManager.getLookAndFeel();
             if (laf != null) {
                 Method m = laf.getClass().getMethod("installColorsInstrumentation", Object.class);
-                m.invoke(null, o);
+                m.invoke(laf, o);
             }
         } catch (UnsupportedOperationException e) {
             throw e;
